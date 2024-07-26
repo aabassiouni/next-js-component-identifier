@@ -28,6 +28,10 @@
       {
         "command": "extension.scan",
         "title": "Scan and Check Component Types"
+      },
+      {
+        "command": "extension.openTreeView",
+        "title": "Open Tree View"
       }
     ]
   },
