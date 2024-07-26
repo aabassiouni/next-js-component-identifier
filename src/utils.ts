@@ -55,14 +55,17 @@ export function getRoutes(appFolder: string) {
     cwd: appFolder,
     dot: true,
     ignore: ["**/node_modules/**", "**/.next/**", "**/.git/**"],
-    absolute: true,
+    // absolute: true,
   });
   console.log("paths", paths);
   for (const path of paths) {
-    const route = path
-      .replace(appFolder, "")
-      .replace(/(page|layout)\.(js|jsx|ts|tsx)$/, "")
-      .replace(/\\/g, "/");
+    const route =
+      "/" +
+      path
+        // .replace(appFolder, "")
+        .replace(/(page|layout)\.(js|jsx|ts|tsx)$/, "")
+        .replace(/\\/g, "/");
+
     routes.add(route);
   }
 
