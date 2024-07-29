@@ -6,8 +6,9 @@ import * as babel from "@babel/parser";
 import { globSync } from "glob";
 import traverse, { type NodePath } from "@babel/traverse";
 import type { ImportDeclaration } from "@babel/types";
-import { checkForClientDirective, getAppFolder, getRoutes, getTsConfigPathAliases } from "./utils";
+import { checkForClientDirective, convertTreeToObject, getAppFolder, getRoutes, getTsConfigPathAliases } from "./utils";
 import { Tree, TreeNode } from "./tree";
+import { getWebviewContent } from "./html";
 
 if (!vscode?.workspace?.workspaceFolders?.length) {
 }
@@ -75,43 +76,38 @@ export async function activate(context: vscode.ExtensionContext) {
     routeTree.print();
   });
 
-  // const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1000);
-  // statusBarItem.text = "Scanning project for client components...";
-
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.openTreeView", () => {
-      const panel = vscode.window.createWebviewPanel(
-        "openWebview", // Identifies the type of the webview. Used internally
-        "Example Page", // Title of the panel displayed to the user
-        vscode.ViewColumn.Beside, // Editor column to show the new webview panel in.
-        {
-          // Enable scripts in the webview
-          enableScripts: true, //Set this to true if you want to enable Javascript.
-        }
-      );
-      const filePath: vscode.Uri = vscode.Uri.file(path.join(context.extensionPath, "src", "tree.html"));
+      const panel = vscode.window.createWebviewPanel("openWebview", "Example Page", vscode.ViewColumn.Beside, {
+        enableScripts: true,
+      });
 
       // panel.webview.html = fs.readFileSync(filePath.fsPath, "utf8");
-      function getWebviewContent() {
-        const html = `<html>
-                    <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>Example Page</title>
-                    </head>
-                    <body>
-                        <h1>Example Page</h1>
 
-                        <p>This is an example web page.</p>
-                    </body>
-                </html>`;
-        return html;
-      }
-      panel.webview.html = getWebviewContent();
+      panel.webview.onDidReceiveMessage(
+        (message) => {
+          console.log("message received", message);
+          if (message.command === "change-route") {
+            console.log("changing route to", message.route);
+            const serializedTree = convertTreeToObject(routeTrees.get(message.route)!);
+            console.log("serialized tree", serializedTree);
+            panel.webview.html = getWebviewContent(message.route, Array.from(routes.values()), serializedTree);
+          }
+        },
+        undefined,
+        context.subscriptions
+      );
+
+      const currRoute = routes.keys().next().value;
+      console.log("starting with route", currRoute);
+      const serializedTree = convertTreeToObject(routeTrees.get(currRoute)!);
+      console.log("serialized tree", serializedTree);
+      panel.webview.html = getWebviewContent(currRoute, Array.from(routes.values()), serializedTree);
     })
   );
 
   vscode.commands.executeCommand("extension.openTreeView");
+
   function traverseImports(route: TreeNode, fileName: string) {
     console.log("traversing imports for", route.value.path);
 

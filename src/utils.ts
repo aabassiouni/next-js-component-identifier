@@ -5,6 +5,7 @@ import * as path from "node:path";
 import * as babel from "@babel/parser";
 import { type NodePath } from "@babel/traverse";
 import type { Directive, File, ImportDeclaration } from "@babel/types";
+import { Tree, TreeNode } from "./tree";
 
 export function getTsConfigPathAliases(
   projectFolder: string
@@ -86,4 +87,22 @@ export function checkForClientDirective(ast: babel.ParseResult<File>): boolean {
   });
 
   return containsClientDirective;
+}
+
+
+export type SerializedTree = {
+  name: string;
+  children: SerializedTree[];
+};
+
+
+export function convertTreeToObject(tree: Tree): SerializedTree {
+  function convertNode(node: TreeNode): any {
+    return {
+      name: node.value.name,
+      children: node.children.map(convertNode)
+    };
+  }
+
+  return convertNode(tree.root);
 }
